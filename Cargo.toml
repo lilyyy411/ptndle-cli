@@ -1,0 +1,64 @@
+[package]
+name = "ptndle-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dirs = "6.0.0"
+eyre = "0.6.12"
+facet = "0.27.15"
+facet-json = "0.24.16"
+facet-pretty = "0.23.22"
+getrandom = "0.2.16"
+num-traits = "0.2.19"
+ordered-float = "5.0.0"
+owo-colors = "4.2.2"
+reedline = "0.40.0"
+ureq = "3.0.12"
+xflags = "0.3.2"
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+# normal lints
+allow_attributes = "forbid"
+allow_attributes_without_reason = "deny"
+float_arithmetic = "deny"
+as_underscore = "forbid"
+cfg_not_test = "deny"
+assertions_on_result_states = "deny"
+alloc_instead_of_core = "deny"
+default_union_representation = "deny"
+deref_by_slicing = "forbid"
+inline_asm_x86_att_syntax = "forbid"       # att syntax sucks
+missing_assert_message = "forbid"
+mixed_read_write_in_expression = "forbid"
+mutex_atomic = "forbid"
+undocumented_unsafe_blocks = "forbid"
+partial_pub_fields = "forbid"
+pathbuf_init_then_push = "forbid"
+box_collection = "forbid"
+rc_buffer = "forbid"
+single_char_lifetime_names = "forbid"
+str_to_string = "forbid"
+string_lit_chars_any = "forbid"
+try_err = "deny"
+tests_outside_test_module = "forbid"
+string_slice = "forbid"
+string_to_string = "forbid"
+shadow_unrelated = "deny"
+needless_raw_strings = "forbid"
+disallowed_names = "forbid"
+disallowed_macros = "forbid"
+assertions_on_constants = "forbid"
+comparison_to_empty = "forbid"
+unit_arg = "deny"
+# min_ident_chars = "forbid"
+# We're not a public api, so make clippy shut up about api things
+module_name_repetitions = "allow"
+new_without_default = "allow"
+must_use_candidate = "allow"
+missing_panics_doc = "allow"
+missing_errors_doc = "allow"
