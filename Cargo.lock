@@ -269,16 +269,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "facet-pretty"
-version = "0.23.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ec51c38e25211d09035be73feb36a90b934902e0d8f3c8ed2340b1a58ab1c3a"
-dependencies = [
- "facet-core",
- "facet-reflect",
-]
-
-[[package]]
 name = "facet-reflect"
 version = "0.27.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -599,9 +589,7 @@ dependencies = [
  "eyre",
  "facet",
  "facet-json",
- "facet-pretty",
  "getrandom",
- "num-traits",
  "ordered-float",
  "owo-colors",
  "reedline",
