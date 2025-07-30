@@ -10,7 +10,7 @@ use owo_colors::OwoColorize;
 use reedline::{default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultPrompt, Emacs,
                ExampleHighlighter, KeyModifiers, MenuBuilder, Reedline, ReedlineEvent, Signal};
 
-use crate::data::{load_sinners, Sinner};
+use crate::data::Sinner;
 use crate::guess::Guess;
 
 #[derive(Debug, Clone)]
@@ -65,14 +65,16 @@ impl Player for OptimalPlayer {
         if self.candidates.len() == 1 {
             return Some(&self.candidates[0]);
         }
-        #[expect(clippy::cast_precision_loss, reason = "The sum will not get big enough for it to be an issue")]
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "The sum will not get big enough for it to be an issue"
+        )]
         Some(
             self.candidates
                 .iter()
                 .map(|guess| {
                     (
                         guess,
-                        
                         self.candidates
                             .iter()
                             .filter(|target| guess != *target)
@@ -172,7 +174,8 @@ impl Player for HumanPlayer {
                                 "Code: {}",
                                 sinner
                                     .code
-                                    .as_ref().map_or_else(|| "NOX".to_owned(), <_>::to_string)
+                                    .as_ref()
+                                    .map_or_else(|| "NOX".to_owned(), <_>::to_string)
                             );
                             println!("Alignment: {:?}", sinner.alignment);
                             println!("Tendency: {:?}", sinner.tendency);
@@ -220,15 +223,16 @@ pub fn play_game<P: Player>(target: &Sinner, mut player: P) -> u8 {
         println!("Guessed {}", play.name);
         if let Some(guess) = game.guess(play) {
             println!("{guess}");
-            assert!(play.matches_result(guess, target), 
-                    "ERROR: Target ({target:?}) does not match its own result ({guess}) based on \
-                     guess ({play:?}). This is a bug."
-                );
+            assert!(
+                play.matches_result(guess, target),
+                "ERROR: Target ({target:?}) does not match its own result ({guess}) based on \
+                 guess ({play:?}). This is a bug."
+            );
             let c = play.clone();
 
             player.update(guess, &c);
         } else {
-            println!("{}", "= 1 1 = 1".green());
+            println!("{}", " =  1  1  =  1".green());
             println!("Won! The sinner was {}!", target.name);
             println!("Won in {} guesses!\n", game.guess_num());
             break game.guess_num();
@@ -237,13 +241,13 @@ pub fn play_game<P: Player>(target: &Sinner, mut player: P) -> u8 {
 }
 
 #[expect(clippy::float_arithmetic, reason = "statistics")]
-pub fn gather_data(force_update: bool) -> eyre::Result<()> {
-    let sinners = load_sinners(force_update)?;
+#[expect(clippy::unnecessary_wraps, reason = "maybe fallible later")]
+pub fn gather_data(sinners: &[Sinner]) -> eyre::Result<()> {
     let sinner_data: Vec<(u8, &Sinner)> = sinners
         .iter()
         .map(|target| {
             (
-                play_game(target, OptimalPlayer::new(sinners.clone())),
+                play_game(target, OptimalPlayer::new(sinners.to_owned())),
                 target,
             )
         })
@@ -251,7 +255,7 @@ pub fn gather_data(force_update: bool) -> eyre::Result<()> {
 
     println!(
         "Goto first sinner to play: {}",
-        OptimalPlayer::new(sinners.clone())
+        OptimalPlayer::new(sinners.to_owned())
             .next_guess()
             .unwrap()
             .name
@@ -286,12 +290,11 @@ pub fn gather_data(force_update: bool) -> eyre::Result<()> {
             f64::from(sum) / sinner_data.len() as f64
         );
     };
-   
 
     Ok(())
 }
 
-pub fn solve(force_update: bool, initial_state: &[NameAndGuess]) -> eyre::Result<()> {
+pub fn solve(initial_state: &[NameAndGuess], sinners: Vec<Sinner>) -> eyre::Result<()> {
     println!("======== Welcome to the Path to Nowordle Solver ========");
     println!(
         "This solver always wins within 4 guesses from an unknown sinner target, but typically \
@@ -306,7 +309,6 @@ pub fn solve(force_update: bool, initial_state: &[NameAndGuess]) -> eyre::Result
     println!("Comparisons are entered as vv/v/~/=/^/^^ and booleans are entered as 0 or 1.");
     println!("An example input is ^^ 0 0 ~ 1");
     println!("==============================");
-    let sinners = load_sinners(force_update)?;
     let sinners_clone = sinners.clone();
     let mut player = OptimalPlayer::new(sinners);
 
@@ -385,7 +387,9 @@ impl FromStr for NameAndGuess {
         };
         Ok(NameAndGuess {
             name: name.trim().to_owned(),
-            guess: guess.parse().map_err(|()| NameAndGuessError::InvalidGuess)?,
+            guess: guess
+                .parse()
+                .map_err(|()| NameAndGuessError::InvalidGuess)?,
         })
     }
 }

@@ -18,7 +18,7 @@ View in-depth help for a command";
 const GATHER_IN_DEPTH_HELP: &str = "USAGE: ptndle-cli gather
 
 Play every possible game of Path To Nowordle and gather statistical data about
-the solver's performance. 
+the solver's performance.
 
 The results of playing each game are sent to stdout along with a summary of the gathered data
 containing the following information:
@@ -58,8 +58,8 @@ Booleans are entered as 0 or 1 and comparisons are entered as follows:
 An example input for a guess is ^^ 0 0 ~ 1 and an example input for the guesses argument
 is \"L.L.:^ 0 0 vv 0,Angell:^^ 0 0 vv 0\"";
 
-const PLAY_WELCOME: &str = r" 
-      __ 
+const PLAY_WELCOME: &str = r"
+      __
      /  \
      |,_,|____
      /        `-----.___
@@ -77,7 +77,7 @@ const PLAY_WELCOME: &str = r"
          \             /
           `-----------`
 
-Welcome to Path to Nowordle CLI edition. 
+Welcome to Path to Nowordle CLI edition.
 To guess a sinner, use the `guess` command.
 To view a sinner's info, use the `info` command.
 To quit, type `quit` or press Ctrl + C.
@@ -98,7 +98,11 @@ fn main() -> eyre::Result<()> {
         | PtndleCliCmd::Help(Help { command }) => {
             eprintln!("{}", get_in_depth_help(&command));
         },
-        | PtndleCliCmd::Gather(_) => gather_data(cli.force_cache_update)?,
+        | PtndleCliCmd::Gather(_) => {
+            let sinners = load_sinners(cli.force_cache_update, &cli.filter.unwrap_or_default())
+                .map_err(|e| eyre!("Failed to load sinners: {e}"))?;
+            gather_data(&sinners)?;
+        },
         | PtndleCliCmd::Play(_) => {
             println!("{PLAY_WELCOME}");
             let random_num = {
@@ -106,15 +110,15 @@ fn main() -> eyre::Result<()> {
                 getrandom(&mut buf).map_err(|e| eyre!("Failed to get random number: {e}"))?;
                 usize::from_le_bytes(buf)
             };
-            let sinner_data = load_sinners(cli.force_cache_update)?;
-            let target = &sinner_data[random_num  % sinner_data.len()];
+            let sinner_data =
+                load_sinners(cli.force_cache_update, &cli.filter.unwrap_or_default())?;
+            let target = &sinner_data[random_num % sinner_data.len()];
             play_game(target, HumanPlayer::new(sinner_data.clone()));
         },
         | PtndleCliCmd::Solve(Solve { guesses }) => {
-            solve(
-                cli.force_cache_update,
-                &guesses.map(|x| x.0).unwrap_or_default(),
-            )?;
+            let filter = cli.filter.unwrap_or_default();
+            let sinners = load_sinners(cli.force_cache_update, &filter)?;
+            solve(&guesses.map(|x| x.0).unwrap_or_default(), sinners)?;
         },
     }
     Ok(())

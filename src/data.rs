@@ -1,12 +1,17 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::time::{Duration, SystemTime};
 
 use eyre::{eyre, Context};
 use facet::Facet;
 
 use crate::compare::{Threshold, Thresholds};
-#[expect(dead_code, reason = "Facet constructs these")]
+use crate::flags::NameAndGuesses;
+use crate::play::NameAndGuessError;
+
 /// A sinner's alignment
+#[expect(dead_code, reason = "Facet constructs these")]
 #[derive(Facet, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum Alignment {
@@ -56,6 +61,7 @@ struct RawSinner {
     height: String,
     birthplace: BirthPlace,
 }
+
 impl RawSinner {
     fn into_sinner(self) -> eyre::Result<Sinner> {
         let code = self.code.parse::<u16>().ok();
@@ -88,7 +94,7 @@ pub struct Sinner {
     pub height: u8,
     pub birthplace: BirthPlace,
 }
-pub const MOST_COMMON_HEIGHT: i16 = 168;
+
 impl Sinner {
     /// Gets the height and code thresholds based on this sinner's data
     #[expect(clippy::float_arithmetic, reason = "we don't care for now")]
@@ -108,9 +114,80 @@ impl Sinner {
     }
 }
 
-fn cache_dir() -> PathBuf {
-    dirs::cache_dir().map_or_else(|| "path-to-nowordle-cli-cache".into(), |x| x.join("Path-To-Nowordle-CLI"))
+pub const MOST_COMMON_HEIGHT: i16 = 168;
+
+/// A filter to apply to the sinner data to narrow the initial pool of sinners
+#[derive(Default, Debug)]
+pub struct Filter {
+    pub names: HashSet<String>,
+    pub matches: NameAndGuesses,
 }
+impl Filter {
+    pub fn apply(&self, data: &mut Vec<Sinner>) {
+        if self.names.is_empty() && self.matches.0.is_empty() {
+            return;
+        }
+        if !self.names.is_empty() {
+            data.retain(|sinner| self.names.contains(&sinner.name.to_ascii_lowercase()));
+        }
+
+        // In hind sight, maybe using a hashmap to store sinner data would've been
+        // better. I mean it doesn't really matter because there's less than 200 entries
+        let sinners_to_guess = data
+            .iter()
+            .filter_map(|sinner| {
+                self.matches
+                    .0
+                    .iter()
+                    .find(|x| x.name.eq_ignore_ascii_case(&sinner.name))
+                    .map(|guess| (sinner.clone(), guess.guess))
+            })
+            .collect::<Vec<_>>();
+
+        for (sinner, guess) in sinners_to_guess {
+            data.retain(|x| sinner.matches_result(guess, x) && x.code != sinner.code);
+        }
+    }
+}
+
+impl FromStr for Filter {
+    type Err = NameAndGuessError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parse_names = |names: &str| {
+            names
+                .split(',')
+                .map(|x| x.trim().to_owned().to_ascii_lowercase())
+                .collect::<HashSet<_>>()
+        };
+        if let Some((names, guesses)) = s.split_once(';') {
+            let matches = guesses.parse()?;
+            let names = parse_names(names);
+            Ok(Self { names, matches })
+        } else {
+            Ok(s.parse().map_or_else(
+                |_| {
+                    Self {
+                        names: parse_names(s),
+                        matches: <_>::default(),
+                    }
+                },
+                |matches| {
+                    Self {
+                        names: <_>::default(),
+                        matches,
+                    }
+                },
+            ))
+        }
+    }
+}
+fn cache_dir() -> PathBuf {
+    dirs::cache_dir().map_or_else(
+        || "path-to-nowordle-cli-cache".into(),
+        |x| x.join("Path-To-Nowordle-CLI"),
+    )
+}
+
 fn make_and_get_cache_dir() -> eyre::Result<PathBuf> {
     let cache = cache_dir();
     std::fs::create_dir_all(&cache).with_context(|| "Failed to create sinner cache directory")?;
@@ -144,7 +221,7 @@ fn is_cache_outdated<P: AsRef<Path>>(path: P) -> bool {
         .unwrap_or(true)
 }
 
-pub fn load_sinners(force_update: bool) -> eyre::Result<Vec<Sinner>> {
+pub fn load_sinners(force_update: bool, filter: &Filter) -> eyre::Result<Vec<Sinner>> {
     let cache_path = make_and_get_cache_dir()?.join("sinners.json");
     let load_cache = || {
         std::fs::read(&cache_path).unwrap_or_else(|e| {
@@ -174,5 +251,10 @@ pub fn load_sinners(force_update: bool) -> eyre::Result<Vec<Sinner>> {
     } else {
         load_cache()
     };
-    load_sinners_from_json(&json)
+    let mut sinners = load_sinners_from_json(&json)?;
+    filter.apply(&mut sinners);
+    if sinners.is_empty() {
+        return Err(eyre!("Filter does not match any sinners"));
+    }
+    Ok(sinners)
 }
