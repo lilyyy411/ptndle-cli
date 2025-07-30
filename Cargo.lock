@@ -270,9 +270,9 @@ dependencies = [
 
 [[package]]
 name = "facet-pretty"
-version = "0.23.22"
+version = "0.23.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ec51c38e25211d09035be73feb36a90b934902e0d8f3c8ed2340b1a58ab1c3a"
+checksum = "1331de78c5e7aca83d3d4f0cf1936f1c509a561a305c6b6c274fa88c08908a9e"
 dependencies = [
  "facet-core",
  "facet-reflect",

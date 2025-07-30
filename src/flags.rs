@@ -1,9 +1,10 @@
-
 use std::fmt::Display;
 use std::str::FromStr;
 
+use crate::data::Filter;
 use crate::play::{NameAndGuess, NameAndGuessError};
-#[derive(Debug)]
+
+#[derive(Debug, Default)]
 pub struct NameAndGuesses(pub Vec<NameAndGuess>);
 
 impl FromStr for NameAndGuesses {
@@ -51,6 +52,9 @@ xflags::xflags! {
     cmd ptndle-cli {
         /// Force-fetch the latest sinner data and store it in the cache.
         optional -f, --force-cache-update
+        /// Filter the sinner data based on a comma-separated list of names, a comma separated list of
+        /// name:guess, or both separated by ;. Example: `Hella,Shalom,Shawn;L.L.:vv 0 0 ^ 0`
+        optional --filter filter: Filter
          /// View in-depth help for a command
         cmd help {
             /// The command to view help for
@@ -70,4 +74,3 @@ xflags::xflags! {
 
     }
 }
-
