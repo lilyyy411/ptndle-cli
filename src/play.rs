@@ -277,7 +277,7 @@ pub fn gather_data(sinners: &[Sinner]) -> eyre::Result<()> {
             count as f64 * 100. / sinner_data.len() as f64
         );
     }
-    println!("The sinners that take the maximum number of guesses rounds are:");
+    println!("The sinners that take the maximum number of guesses are:");
     for (_, sinner) in max_round_sinners {
         println!("    {}", sinner.name);
     }
