@@ -57,7 +57,9 @@ impl Player for OptimalPlayer {
     fn update(&mut self, result: Guess, character: &Sinner) {
         self.candidates = std::mem::take(&mut self.candidates)
             .into_iter()
-            .filter(|x| character.matches_result(result, x) && x.code != character.code)
+            .filter(|x| {
+                character.matches_result(result, x) && x.name != character.name // damn you necrestra hella
+            })
             .collect();
     }
     #[expect(clippy::float_arithmetic, reason = "statistics")]
