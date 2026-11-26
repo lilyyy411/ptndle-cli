@@ -29,7 +29,8 @@ pub enum Alignment {
     Violence,
     Treachery,
     War,
-    Sequester
+    Sequester,
+    Infinite
 }
 /// A sinner's tendency
 #[expect(dead_code, reason = "Facet constructs these")]
