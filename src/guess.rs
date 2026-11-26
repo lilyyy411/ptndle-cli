@@ -220,17 +220,17 @@ impl Sinner {
             return false;
         }
         if let Some(code) = result.code() {
-            let Some((guess, candidate)) = self.code.zip(guess.code) else {
-                return false;
-            };
-            if !code_matches(guess, candidate, code) {
-                return false;
+            match (self.code, guess.code) {
+                | (Some(guess), Some(candidate)) if !code_matches(guess, candidate, code) => {
+                    return false
+                },
+                | (Some(_), None) | (None, Some(_)) => return false,
+                | _ => {},
             }
         } else if self.code.is_some() && guess.code.is_some() {
             return false;
         }
 
-        // println!("{} {}\n{} {}", self.name, self.height, guess.name, guess.height);
         height_matches(self.height, guess.height, result.height())
     }
 }
